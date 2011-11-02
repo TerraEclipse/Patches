@@ -1,0 +1,53 @@
+From 0c2d4d0bd901f28128ba85c374f920b1b22ef81c Mon Sep 17 00:00:00 2001
+From: Carlos Rodriguez <carlos@s8f.org>
+Date: Wed, 2 Nov 2011 11:51:56 -0700
+Subject: [PATCH 1/1] PHP code eval support.
+
+---
+ context_contrib/context_contrib.module |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/context_contrib/context_contrib.module b/context_contrib/context_contrib.module
+index 7b2a095..3c0edd7 100644
+--- a/context_contrib/context_contrib.module
++++ b/context_contrib/context_contrib.module
+@@ -46,10 +46,36 @@ function context_contrib_context_conditions() {
+     }
+   }
+ 
++  // PHP Code
++  if (user_access('use PHP for block visibility')) {
++    $items['php_code'] = array(
++      '#title'          =>  t('PHP Code'),
++      '#description'    =>  t('Set this context when the php code returns TRUE. Use &lt;?php ?&gt; tags.'),
++      '#type'           =>  'textarea',
++      '#rows'           =>  12,
++    );
++  }
++
+   return $items;
+ }
+ 
+ /**
++ * Implementation of hook_context_page_alter()
++ */
++function context_contrib_context_page_alter() {
++  foreach (context_enabled_contexts() as $identifier => $context) {
++    // context by php_code
++    if (!empty($context->php_code) && is_array($context->php_code)) {
++      $php_code_return = drupal_eval($context->php_code[0]);
++      if ($php_code_return) {
++        context_set($context->namespace, $context->attribute, $context->value);
++      }
++    }
++  }
++  context_active_contexts(TRUE);
++}
++
++/**
+  * Implementation of hook_context_reactions().
+  */
+ function context_contrib_context_reactions() {
+-- 
+1.7.5.4
+
