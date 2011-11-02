@@ -1,0 +1,134 @@
+From b5bc46bdb947f6b942cc698bd64221488e86e113 Mon Sep 17 00:00:00 2001
+From: Carlos Rodriguez <carlos@s8f.org>
+Date: Wed, 2 Nov 2011 16:18:16 -0700
+Subject: [PATCH 1/1] Compatibility with jQuery UI 1.7.
+
+---
+ jquery_ui.module |   66 +++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 61 insertions(+), 5 deletions(-)
+
+diff --git a/jquery_ui.module b/jquery_ui.module
+index b62072a..3eef869 100644
+--- a/jquery_ui.module
++++ b/jquery_ui.module
+@@ -11,6 +11,18 @@
+  */
+ 
+ /**
++ * Determine which version of jQuery UI to use.
++ */
++if (function_exists('module_exists') && module_exists('jquery_update') && variable_get('jquery_ui_auto_version', TRUE)) {
++  define('JQUERY_UI_VERSION', '1.7.2');
++  define('JQUERY_UI_FOLDER', 'jquery-ui-1.7.2');
++}
++else {
++  define('JQUERY_UI_VERSION', '1.6 ');
++  define('JQUERY_UI_FOLDER', 'jquery-ui-1.6');
++}
++
++/**
+  * Path to jQuery UI library.
+  *
+  * During site installation, JQUERY_UI_PATH is the absolute path to the
+@@ -18,10 +30,10 @@
+  * safe for use in URLs.
+  */
+ if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE == 'install') {
+-  define('JQUERY_UI_PATH', dirname(__FILE__) . '/jquery.ui');
++  define('JQUERY_UI_PATH', dirname(__FILE__) . '/' . JQUERY_UI_FOLDER);
+ }
+ else {
+-  define('JQUERY_UI_PATH', drupal_get_path('module', 'jquery_ui') . '/jquery.ui');
++  define('JQUERY_UI_PATH', drupal_get_path('module', 'jquery_ui') . '/' . JQUERY_UI_FOLDER);
+ }
+ 
+ /**
+@@ -34,11 +46,15 @@ else {
+  *   An array of what additional files (other than UI core) should be loaded
+  *   on the page, or a string with a single file name.
+  */
+-function jquery_ui_add($files = array()) {
++function jquery_ui_add($files = array(), $theme = NULL) {
+   static $loaded_files, $ui_core, $effects_core;
+   $jquery_ui_path = JQUERY_UI_PATH . '/ui';
+   $compression = variable_get('jquery_update_compression_type', 'mini');
+ 
++  // Set the theme.
++  $theme_name = $theme ? $theme : variable_get('jquery_ui_theme', 'base');
++  $theme_path = JQUERY_UI_PATH . '/themes/' . $theme_name;
++
+   // Convert file to an array if it's not one already, to compensate for
+   // lazy developers. ;)
+   if (!is_array($files)) {
+@@ -48,7 +64,13 @@ function jquery_ui_add($files = array()) {
+   // If core hasn't been added yet, add it.
+   if (!isset($ui_core)) {
+     $ui_core = TRUE;
+-    jquery_ui_add(array('ui.core'));
++    jquery_ui_add(array('ui.core'), $theme);
++    drupal_add_css($theme_path . '/ui.core.css');
++    drupal_add_css($theme_path . '/ui.base.css');
++    drupal_add_css($theme_path . '/ui.theme.css');
++
++    // Add a version to indicate the ui version.
++    drupal_add_js(array('jquery_ui' => array('version' => JQUERY_UI_VERSION)), 'setting');
+   }
+ 
+   // Loop through list of files to include and add them to the page.
+@@ -56,7 +78,7 @@ function jquery_ui_add($files = array()) {
+     // Any effects files require the effects core file.
+     if (!isset($effects_core) && strpos($file, 'effects.') === 0) {
+       $effects_core = TRUE;
+-      jquery_ui_add(array('effects.core'));
++      jquery_ui_add(array('effects.core'), $theme);
+     }
+ 
+     // Load other files.
+@@ -77,6 +99,8 @@ function jquery_ui_add($files = array()) {
+       }
+       $js_path = $jquery_ui_path . '/' . $file_path;
+       drupal_add_js($js_path);
++      $css_path = $theme_path . '/' . $file . '.css';
++      drupal_add_css($css_path);
+       $loaded_files[$file] = $js_path;
+     }
+   }
+@@ -95,3 +119,35 @@ function jquery_ui_get_version() {
+   return $version;
+ }
+ 
++/**
++ * Implementation of hook_menu()
++ */
++function jquery_ui_menu() {
++  $items['admin/settings/jquery_ui'] = array(
++    'title' => 'jQuery UI',
++    'description' => 'Configure settings for jQuery UI module.',
++    'page callback' => 'drupal_get_form',
++    'page arguments' => array('jquery_ui_settings'),
++    'access arguments' => array('administer site configuration'),
++  );
++  return $items;
++}
++
++function jquery_ui_settings() {
++  $theme_path = JQUERY_UI_PATH . '/themes';
++  $files = file_scan_directory($theme_path, '.*', array('.', '..', 'CVS', '.DS_Store'), 0, FALSE, 'basename');
++
++  $options = array();
++  foreach ($files as $name => $file) {
++    $options[$name] = $name;
++  }
++
++  $form['jquery_ui_theme'] = array(
++    '#type' => 'radios',
++    '#title' => t('Choose jQuery UI theme'),
++    '#default_value' => variable_get('jquery_ui_theme', 'base'),
++    '#options' => $options,
++  );
++
++  return system_settings_form($form);
++}
+-- 
+1.7.5.4
+
