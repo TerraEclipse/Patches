@@ -1,0 +1,38 @@
+From c79686f1d1d684f09e328749d0469aad721376da Mon Sep 17 00:00:00 2001
+From: Carlos Rodriguez <carlos@s8f.org>
+Date: Wed, 2 Nov 2011 12:58:42 -0700
+Subject: [PATCH 1/1] Implement hook_te_admin().
+
+---
+ menu_admin_per_menu.module |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/menu_admin_per_menu.module b/menu_admin_per_menu.module
+index 616b5e8..77d7380 100644
+--- a/menu_admin_per_menu.module
++++ b/menu_admin_per_menu.module
+@@ -127,3 +127,21 @@ function menu_admin_per_menu_form_alter(&$form, $form_state, $form_id) {
+     }
+   }
+ }
++
++/**
++ * Implementation of hook_te_admin().
++ */
++function menu_admin_per_menu_te_admin_alter($op = 'structure', &$items) {
++  switch ($op) {
++    case 'structure':
++      $access = FALSE;
++      $menus = menu_get_menus();
++      foreach ($menus as $name => $title) {
++        if (user_access('administer '.$name.' menu items')) {
++          $access = TRUE;
++        }
++      } 
++      $items['config']['menu']['#access'] = $access;
++      break;
++  }
++}
+-- 
+1.7.5.4
+
