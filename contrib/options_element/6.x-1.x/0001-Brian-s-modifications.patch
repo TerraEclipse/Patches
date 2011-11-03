@@ -1,0 +1,30 @@
+From f12cf4eb40716a4b241ed0a16dc128037232f269 Mon Sep 17 00:00:00 2001
+From: Carlos Rodriguez <carlos@s8f.org>
+Date: Wed, 2 Nov 2011 18:32:56 -0700
+Subject: [PATCH 1/1] Brian's modifications.
+
+---
+ options_element.inc |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/options_element.inc b/options_element.inc
+index 23c6789..0d4881d 100644
+--- a/options_element.inc
++++ b/options_element.inc
+@@ -354,6 +354,13 @@ function _form_options_from_text($text, $key_type, $flat = FALSE, &$duplicates =
+         'group' => $group,
+       );
+     }
++    elseif ($key_type == 'associative') {
++      $items[] = array(
++        'key' => $row,
++        'value' => $row,
++        'group' => $group,
++      );
++    }
+     // Set this this row as a straight value.
+     else {
+       $items[] = array(
+-- 
+1.7.5.4
+
